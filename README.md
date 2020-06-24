@@ -1,5 +1,5 @@
 # MotioNet 
 
-The library provides the source code of [*MotioNet*]([https://rubbly.cn/publications/motioNet](http://rubbly.cn/publications/motioNet)), ToG 2020, which extarct human motion from monocular video with deep learning. Benefited from the kinematic-based network, the predicted human motion can be extended to bvh file directly without any post-processing.
+This library provides the source code of [*MotioNet*]([https://rubbly.cn/publications/motioNet](http://rubbly.cn/publications/motioNet)), [ToG 2020], a method to reconstruct human motion from monocular video. Benefited from a kinematic-based network, designed based on the common motion representation, the reconstructed human motion can be converted to bvh file directly without any post-processing.
 
-One-step script and interfaces are coming soon.
+The code will be published soon.
