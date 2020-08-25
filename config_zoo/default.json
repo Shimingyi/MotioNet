@@ -1,0 +1,26 @@
+{
+    "arch": {
+        "type": "fk_model",
+        "kernel_size": [3,1],
+        "stride": [1,1],
+        "dilation": [1,1],
+        "channel": 512,
+        "stage": 2,
+        "n_type": 1,
+        "rotation_type": "q",
+        "translation": false,
+        "confidence": false,
+        "contact": false
+    },
+    "trainer": {
+        "epochs": 50,  
+        "save_dir": "/mnt/model/motionet_chekpoints",
+        "save_freq": 10,
+        "verbosity": 2,
+        "monitor": "val_metric",
+        "monitor_mode": "min"
+    },
+    "visualization":{
+        "tensorboardX": true
+    }
+}
