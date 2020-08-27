@@ -4,7 +4,6 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
 from base.base_model import base_model
-from utils import heatmap_utils
 from utils.Quaternions import Quaternions
 
 
