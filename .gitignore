@@ -1,6 +1,5 @@
 *.npz
 *.pth
-data/example/
 output/*
 scripts.sh
 

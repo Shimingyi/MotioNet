@@ -108,17 +108,21 @@ def main(config, args, output_folder):
             length = (pre_bones * parameters[3].unsqueeze(0) + parameters[2].repeat(pre_bones.shape[0], 1, 1))[0].cpu().numpy()
             BVH.save('%s/%s.bvh' % (output_folder, video_name), Animation.load_from_network(translation, rotations, length, third_dimension=1), names=name_list)
             print('The bvh file of %s has been saved!' % video_name)
-        export(args.input)
+        if args.input == 'demo':
+            for folder_name in os.listdir('./data/example'):
+                export('./data/example/%s' % folder_name)
+        else:
+            export(args.input)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='### MotioNet eveluation')
 
     parser.add_argument('-r', '--resume', default='./checkpoints/h36m_gt.pth', type=str,
                            help='path to checkpoint (default: None)')
-    parser.add_argument('-d', '--device', default="1", type=str,
+    parser.add_argument('-d', '--device', default="0", type=str,
                            help='indices of GPUs to enable (default: all)')
     parser.add_argument('-i', '--input', default='h36m', type=str,
-                       help='h36m/input_folder_path]')
+                       help='h36m or demo or [input_folder_path]')
     parser.add_argument('-o', '--output', default='./output', type=str,
                         help='Output folder')
     parser.add_argument('--interface', default='openpose', type=str,
