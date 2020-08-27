@@ -73,7 +73,7 @@ def main(config, args, output_folder):
         parameters = [torch.from_numpy(np.array(item)).float().to(device) for item in h36m_loader(config, is_training=True).dataset.get_parameters()]
         def export(pose_folder):
             video_name = pose_folder.split('/')[-1]
-            files = util.make_dataset([pose_folder], phase='json', data_split=1, sort=True, sort_index=0)
+            files = util.make_dataset([pose_folder], phase='json', data_split=1, sort=True, sort_index=1)
             IMAGE_WIDTH = 1080 # Should be changed refer to your test data
             pose_batch = []
             confidence_batch = []
