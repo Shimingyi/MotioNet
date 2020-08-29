@@ -26,7 +26,7 @@ We provide a pretrained model and a few demo examples, that demonstrate how our 
 
 ```shell
 mkdir output
-python evaluat.py -r ./checkpoints/wild_gt_tcc.pth -i demo
+python evaluate.py -r ./checkpoints/wild_gt_tcc.pth -i demo
 ```
 
 The resulting bvh files will be found at **./output**. Note that for these examples we already extracted the 2D key-points from the videos using [Openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose)) , but if you want to use your own videos this piror step should be performed by yourself. All the original video can be found in our [video](https://www.youtube.com/watch?v=8YubchlzvFA).
