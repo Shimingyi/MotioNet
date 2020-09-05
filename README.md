@@ -88,7 +88,7 @@ After running Openpose, all 2d pose files will be stored in one folder, then you
 Now we **haven't apply any smoothing process** on the 2d **input** and **output**, you can do it by yourself to get better results like we show in the video, but here we want to show the original production.
 
 ```shell
-python evaluate.py -r ./checkpoints/wild_gt_cta.pth -i [openpose_results_folder]
+python evaluate.py -r ./checkpoints/wild_gt_tcc.pth -i [openpose_results_folder]
 ```
 
 ## Train from scratch
