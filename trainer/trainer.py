@@ -88,9 +88,8 @@ class fk_trainer(base_trainer):
         total_val_loss = 0
         for batch_idx, datas in enumerate(self.test_data_loader):
             datas = [self._prepare_data(item, _from='tensor') for item in datas[:-1]]
-            poses_2d, poses_3d, bones, contacts, alphas, proj_facters = datas
+            poses_2d_pixel, poses_2d, poses_3d, bones, contacts, alphas, proj_facters = datas
             _, _, _, fake_pose_3d, _, _ = self.model.forward_fk(poses_2d, self.test_parameters)
-            a = torch.mean(alphas[0]).data.cpu().numpy()
             total_val_metrics += metric.mean_points_error(fake_pose_3d, poses_3d) * torch.mean(alphas[0]).data.cpu().numpy()
             total_val_loss += torch.mean(torch.norm(fake_pose_3d.view(-1, 17, 3) - poses_3d.view(-1, 17, 3), dim=-1)).item()
         val_log = {'val_metric': total_val_metrics/len(self.test_data_loader), 'val_loss': total_val_loss/len(self.test_data_loader),}

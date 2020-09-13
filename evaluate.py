@@ -35,7 +35,7 @@ def main(config, args, output_folder):
         for video_idx, datas in enumerate(test_data_loader):
             video_name = datas[-1][0]
             datas = [item.float().to(device) for item in datas[:-1]]
-            poses_2d, poses_3d, bones, contacts, alphas, proj_facters = datas
+            poses_2d_pixel, poses_2d, poses_3d, bones, contacts, alphas, proj_facters = datas
             with torch.no_grad():
                 pre_bones, pre_rotations, pre_rotations_full, pre_pose_3d, pre_c, pre_proj = model.forward_fk(poses_2d, test_parameters)
             error = metric.mean_points_error(poses_3d, pre_pose_3d)*torch.mean(alphas[0]).data.cpu().numpy()
@@ -48,10 +48,10 @@ def main(config, args, output_folder):
             if video_idx in sampling_export:
                 if config.arch.translation:
                     R, T, f, c, k, p, res_w, res_h = test_data_loader.dataset.cameras[(int(video_name.split('_')[0].replace('S', '')), int(video_name.split('_')[-1]))]
-                    pose_2d_film = (poses_2d[0, :, :2].cpu().numpy() - c[:, 0]) / f[:, 0]
+                    pose_2d_film = (poses_2d_pixel[0, :, :2].cpu().numpy() - c[:, 0]) / f[:, 0]
                     translations = np.ones(shape=(pose_2d_film.shape[0], 3))
                     translations[:, :2] = pose_2d_film
-                    translation = (translations * np.repeat(pre_proj[0].cpu().numpy(), 3, axis=-1).reshape((-1, 3))) * 5
+                    translation = (translations * np.repeat(pre_proj[0].cpu().numpy(), 3, axis=-1).reshape((-1, 3))) * 8
                 else:
                     translation = np.zeros((poses_2d.shape[1], 3))
                 rotations = pre_rotations_full[0].cpu().numpy()
@@ -91,13 +91,13 @@ def main(config, args, output_folder):
                     poses_2d_root_c[:, 3 * joint_index] = poses_2d_root[:, 2 * joint_index].copy()
                     poses_2d_root_c[:, 3 * joint_index + 1] = poses_2d_root[:, 2 * joint_index + 1].copy()
                     poses_2d_root_c[:, 3 * joint_index + 2] = np.array(confidences)[:, joint_index].copy()
-                poses_2d = poses_2d_root_c
-            poses_2d = np.divide((poses_2d - parameters[0].cpu().numpy()), parameters[1].cpu().numpy())
-            poses_2d = torch.from_numpy(np.array(poses_2d)).unsqueeze(0).float().to(device)
+                poses_2d_root = poses_2d_root_c
+            poses_2d_root = np.divide((poses_2d_root - parameters[0].cpu().numpy()), parameters[1].cpu().numpy())
+            poses_2d_root = torch.from_numpy(np.array(poses_2d_root)).unsqueeze(0).float().to(device)
             with torch.no_grad():
-                pre_bones, pre_rotations, pre_rotations_full, pre_pose_3d, pre_c, pre_proj = model.forward_fk(poses_2d, parameters)
+                pre_bones, pre_rotations, pre_rotations_full, pre_pose_3d, pre_c, pre_proj = model.forward_fk(poses_2d_root, parameters)
             if config.arch.translation:
-                pose_2d_film = (poses_2d[0, :, :2].cpu().numpy() - 0.5)
+                pose_2d_film = (poses_2d[:, :2] - 0.5)
                 translations = np.ones(shape=(pose_2d_film.shape[0], 3))
                 translations[:, :2] = pose_2d_film
                 translation = (translations * np.repeat(pre_proj[0].cpu().numpy(), 3, axis=-1).reshape((-1, 3))) * 3

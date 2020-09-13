@@ -10,7 +10,7 @@ from utils import h36m_utils, util
 
 class h36m_dataset(Dataset):
     def __init__(self, config, is_train=True):
-        poses_3d, poses_2d, bones, alphas, contacts, proj_facters = [], [], [], [], [], []
+        poses_3d, poses_2d, poses_2d_pixel, bones, alphas, contacts, proj_facters = [], [], [], [], [], [], []
         self.cameras = h36m_utils.load_cameras('./data/cameras.h5')
 
         self.frame_numbers = []
@@ -41,6 +41,7 @@ class h36m_dataset(Dataset):
                         set_2d = positions_set_2d['S%s' % subject][action][c_idx]
                         set_2d = set_2d.reshape((set_2d.shape[0], -1))[:min(set_3d.shape[0], set_2d.shape[0])]
                         set_3d = set_3d[:min(set_3d.shape[0], set_2d.shape[0])]
+                    set_2d_pixel = set_2d
                     set_3d_root = set_3d - np.tile(set_3d[:, :3], [1, int(set_3d.shape[-1]/3)])
                     set_2d_root = set_2d - np.tile(set_2d[:, :2], [1, int(set_2d.shape[-1]/2)])
 
@@ -54,6 +55,7 @@ class h36m_dataset(Dataset):
                     self.video_name.append('S%s_%s_%s' % (subject, action, c_idx))
                     poses_3d.append(set_3d_root/np.expand_dims(set_alphas, axis=-1))
                     poses_2d.append(set_2d_root)
+                    poses_2d_pixel.append(set_2d_pixel)
                     bones.append(set_bones/np.expand_dims(set_alphas, axis=-1))
                     alphas.append(set_alphas)
                     contacts.append(self.get_contacts(set_3d_world))
@@ -61,6 +63,7 @@ class h36m_dataset(Dataset):
 
         self.poses_3d = np.concatenate(poses_3d, axis=0)
         self.poses_2d = np.concatenate(poses_2d, axis=0)
+        self.poses_2d_pixel = np.concatenate(poses_2d_pixel, axis=0)
         self.proj_facters = np.concatenate(proj_facters, axis=0)
         self.contacts = np.concatenate(contacts, axis=0)
         self.alphas = np.concatenate(alphas, axis=0)
@@ -70,8 +73,10 @@ class h36m_dataset(Dataset):
             if config.trainer.data_aug_flip:
                 posed_3d_flip = self.get_flipping(self.poses_3d, dim=3)
                 posed_2d_flip = self.get_flipping(self.poses_2d, dim=2)
+                poses_2d_pixel_flip = self.get_flipping(self.poses_2d_pixel, dim=2)
                 self.poses_3d = np.concatenate([self.poses_3d, posed_3d_flip], axis=0)
                 self.poses_2d = np.concatenate([self.poses_2d, posed_2d_flip], axis=0)
+                self.poses_2d_pixel = np.concatenate([self.poses_2d_pixel, poses_2d_pixel_flip], axis=0)
             if config.trainer.use_loss_D:
                 rotations_set = np.load('./data/data_cmu.npz', allow_pickle=True)['rotations']
                 self.r_frame_numbers = [r_array.shape[0] for r_array in rotations_set]
@@ -94,9 +99,9 @@ class h36m_dataset(Dataset):
     def __getitem__(self, index):
         items_index = self.sequence_index[index]
         random_flip = (self.config.trainer.data_aug_flip and self.is_train and random.randint(0, 10) > 5)
-        
         poses_2d = self.poses_2d[items_index + int(self.poses_3d.shape[0]/2)] if random_flip else self.poses_2d[items_index]
         posed_3d = self.poses_3d[items_index + int(self.poses_3d.shape[0]/2)] if random_flip else self.poses_3d[items_index]
+        poses_2d_pixel = self.poses_2d_pixel[items_index + int(self.poses_3d.shape[0]/2)] if random_flip else self.poses_2d_pixel[items_index]
         bones = self.bones[items_index]
         contacts = self.contacts[items_index]
         alphas = self.alphas[items_index]
@@ -109,7 +114,7 @@ class h36m_dataset(Dataset):
             else:
                 return poses_2d, posed_3d, bones, contacts, alphas, proj_facters
         else:
-            return poses_2d, posed_3d, bones, contacts, alphas, proj_facters, self.video_name[index]
+            return poses_2d_pixel, poses_2d, posed_3d, bones, contacts, alphas, proj_facters, self.video_name[index]
 
     def __len__(self):
         return self.sequence_index.shape[0]
