@@ -109,7 +109,7 @@ def main(config, args, output_folder):
             BVH.save('%s/%s.bvh' % (output_folder, video_name), Animation.load_from_network(translation, rotations, length, third_dimension=1), names=name_list)
             print('The bvh file of %s has been saved!' % video_name)
         if args.input == 'demo':
-            for folder_name in os.listdir('./data/example'):
+            for folder_name in [0, 2, 3, 4, 5, 6]: # The pretrained wild model required at least 101 frames as input, if you would like to use it in a short video, please train another version with --stage_number 1
                 export('./data/example/%s' % folder_name)
         else:
             export(args.input)
