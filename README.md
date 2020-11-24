@@ -55,7 +55,7 @@ All procedures produce the same result, but we recommend you process data by you
 
 Now there are two available pre-trained models, one is for evaluation on h36m with ground-truth 2d detection and another one is for wild videos using [confidence map, foot contact signal and adversarial training].
 
-After downloading with link [[Google drive](https://drive.google.com/drive/folders/19hO4eVV8cE61aVg3dA-hClVjrtiJhq8d?usp=sharing)], then place them into ./checkpoints folder.
+After downloading with link [[Google drive(updated!)](https://drive.google.com/drive/folders/19hO4eVV8cE61aVg3dA-hClVjrtiJhq8d?usp=sharing)], then place them into ./checkpoints folder.
 
 More pre-trained model will be released next days.
 

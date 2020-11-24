@@ -41,23 +41,14 @@ class fk_trainer(base_trainer):
             loss_f = torch.mean(torch.norm(fake_c - contacts, dim=-1)) if self.config.trainer.use_loss_foot else 0
             loss_fc = (torch.mean(get_velocity(fake_pose_3d, 3)[contacts[:, 1:-1, 0] == 1] ** 2) + torch.mean(get_velocity(fake_pose_3d, 6)[contacts[:, 1:-1, 0] == 1] ** 2)) if self.config.trainer.use_loss_foot else 0
             if self.config.trainer.use_loss_D:
-                G_real = self.model.D(fake_rotations.detach())
-                D_real = self.model.D(rotations)
-                D_fake = self.model.D(fake_rotations.detach())
+                G_real = self.model.D(fake_rotations)
                 loss_G_GAN = torch.mean(torch.norm((G_real - 1) ** 2, dim=-1))
-                loss_D = torch.mean(torch.norm((D_real - 1) ** 2)) + torch.mean(torch.sum((D_fake) ** 2, dim=-1))
             else:
-                loss_G_GAN, loss_D = 0, 0
+                loss_G_GAN = 0
             
-            # loss_bones = loss_bones#*self.lambda_s          
+            loss_bones = loss_bones#*self.lambda_s
             loss_G = loss_positions + loss_root*self.lambda_root + loss_f*self.lambda_f + loss_fc*self.lambda_fc + loss_G_GAN*self.lambda_q
-            loss_D = loss_D*self.lambda_q
             
-            if self.config.trainer.use_loss_D:
-                self.model.optimizer_D.zero_grad()
-                loss_D.backward()
-                self.model.optimizer_D.step()
-
             self.model.optimizer_S.zero_grad()
             loss_bones.backward()
             self.model.optimizer_S.step()
@@ -65,8 +56,19 @@ class fk_trainer(base_trainer):
             loss_G.backward()
             self.model.optimizer_Q.step()
 
+            if self.config.trainer.use_loss_D:
+                D_real = self.model.D(rotations)
+                D_fake = self.model.D(fake_rotations.detach())
+                loss_D = torch.mean(torch.norm((D_real - 1) ** 2)) + torch.mean(torch.sum((D_fake) ** 2, dim=-1))
+                loss_D = loss_D*self.lambda_q
+                self.model.optimizer_D.zero_grad()
+                loss_D.backward()
+                self.model.optimizer_D.step()
+            else:
+                loss_D = 0
+
             train_log = {'loss_G': loss_G, 'loss_positions': loss_positions, 'loss_bones': loss_bones, \
-                                        'lambda_root': loss_root, 'loss_f': loss_f, 'loss_fc': loss_fc, \
+                                        'loss_root': loss_root, 'loss_f': loss_f, 'loss_fc': loss_fc, \
                                         'loss_G_GAN': loss_G_GAN, 'loss_D': loss_D}
 
             if self.verbosity >= 2 and batch_idx % self.log_step == 0:
@@ -80,6 +82,7 @@ class fk_trainer(base_trainer):
             self.stpes += 1
         
         val_log = self._valid_epoch(epoch)
+        self.data_loader.dataset.set_sequences()
         return val_log
 
     def _valid_epoch(self, epoch):

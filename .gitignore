@@ -1,6 +1,7 @@
 *.npz
 *.pth
 output/*
+checkpoints/*
 scripts.sh
 
 # Byte-compiled / optimized / DLL files

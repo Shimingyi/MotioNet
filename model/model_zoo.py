@@ -112,10 +112,10 @@ class fk_layer(base_model):
     def transforms_rotations(self, rotations):
         if self.rotation_type == 'q':
             q_length = torch.sqrt(torch.sum(torch.pow(rotations, 2), dim=-1))
-            qw = rotations[..., 0] / q_length
-            qx = rotations[..., 1] / q_length
-            qy = rotations[..., 2] / q_length
-            qz = rotations[..., 3] / q_length
+            qw = rotations[..., 0].clone() / q_length
+            qx = rotations[..., 1].clone() / q_length
+            qy = rotations[..., 2].clone() / q_length
+            qz = rotations[..., 3].clone() / q_length
             qw[qw != qw] = 0
             qx[qx != qx] = 0
             qy[qy != qy] = 0
@@ -345,25 +345,26 @@ class rotation_D(base_model):
         super(rotation_D, self).__init__()
         self.local_fc_layers = nn.ModuleList()
         self.joint_numbers = joint_numbers
-
-        self.conv1 = nn.Conv1d(in_features, channel, kernel_size=1, stride=1, bias=False)
-        self.conv2 = nn.Conv1d(channel, channel, kernel_size=1, stride=1, bias=False)
+        self.shrink_frame_number = 24
+        self.relu = nn.ReLU(inplace=True)
+        self.conv1 = nn.Conv1d(self.joint_numbers, self.joint_numbers, kernel_size=4, stride=1, bias=False)
+        self.conv2 = nn.Conv1d(self.joint_numbers, self.joint_numbers, kernel_size=1, stride=1, bias=False)
 
         for i in range(joint_numbers):
             self.local_fc_layers.append(
-                nn.Linear(in_features=channel, out_features=1)
+                nn.Linear(in_features=self.shrink_frame_number, out_features=1)
             )
 
     # Get input B*T*J*4
     def forward(self, x):
-        x = x.view((-1, x.shape[-2], x.shape[-1]))
+        x = x.view((x.shape[0], -1, self.joint_numbers))
         x = torch.transpose(x, 1, 2)
 
-        x = self.conv2(self.conv1(x))
-        
+        x = self.relu(self.conv2(self.relu(self.conv1(x))))
+        x = F.adaptive_avg_pool1d(x, self.shrink_frame_number)
         layer_output = []
         for i in range(self.joint_numbers):
-            layer_output.append(self.local_fc_layers[i](x[:,:,i]))
+            layer_output.append(self.local_fc_layers[i](x[:,i,:].clone()))
         return torch.cat(layer_output, -1)
 
 

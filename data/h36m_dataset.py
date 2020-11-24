@@ -137,7 +137,7 @@ class h36m_dataset(Dataset):
                 start_index += frames
             return sequence_index
         offset = 10
-        train_frames = random.randint(10, 50) * 4 if self.config.trainer.train_frames == 0 else self.config.trainer.train_frames
+        train_frames = random.randint(26, 50) * 4 if self.config.trainer.train_frames == 0 else self.config.trainer.train_frames
         self.sequence_index = np.array(slice_set(offset, train_frames, self.frame_numbers))
         self.r_sequence_index = np.array(slice_set(offset, train_frames, self.r_frame_numbers)) if self.is_train and self.config.trainer.use_loss_D else 0
 
