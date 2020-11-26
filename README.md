@@ -35,7 +35,7 @@ The resulting bvh files will be found at **./output**. Note that for these examp
 
 #### Training Data
 
-There are two datasets in full pipeline, one is [Human3.6m](http://vision.imar.ro/human3.6m/description.php) and another one is [CMU Motion Capture](https://sites.google.com/a/cgspeed.com/cgspeed/motion-capture/cmu-bvh-conversion) data. The h36m data is necessary for both traning and testing, so prepare it firstly.
+There are two datasets in full pipeline, one is [Human3.6m](http://vision.imar.ro/human3.6m/description.php) and another one is [CMU Motion Capture](https://sites.google.com/a/cgspeed.com/cgspeed/motion-capture/cmu-bvh-conversion) data. The h36m data is necessary for both training and testing, so prepare it firstly.
 
 For h36m, you can follow [h36m-fetch](https://github.com/anibali/h36m-fetch) to download original files, once you get extracted files, you can run our python script to convert it to a numpy matrix:
 
@@ -71,19 +71,19 @@ python evaluate.py -r ./checkpoints/h36m_gt.pth -i h36m -o [output_folder]
 python evaluate.py -r ./checkpoints/h36m_gt_t.pth -i h36m -o [output_folder]
 ```
 
-The results will be placed in a subfolder in *./output* with a special name which is a combination of model parameters, it will be helpful to understant the training details. And two kinds of results will be generated: error.txt and BVH files.
+The results will be placed in a subfolder in *./output* with a special name which is a combination of model parameters, it will be helpful to understand the training details. And two kinds of results will be generated: error.txt and BVH files.
 
 In error.txt, you can find same performance like what we show - around 53mm with gt detected(52mm when the channel parameter is 2048, but it causes waste of model size and training time). And 4 randomly selected bvh file will also be stored in here, you can use Blender to see the visual performance.
 
 The translation will be observed clearly in action like Walking or WalkingDog. 
 
-(NOTICE: The tranining data we use is in camera space, so the orentation of predicted pose will be strange when you observe it in Blender World Space, you need to rotate the user view or skeleton object in Blender)
+(NOTICE: The training data we use is in camera space, so the orientation of predicted pose will be strange when you observe it in Blender World Space, you need to rotate the user view or skeleton object in Blender)
 
 ### Test on wild videos
 
-Once you have h36m data, 2d detected data and pre-trained model, you can run the script to evaluate our model on wild videos. Now we provede the interface between Openpose and our network, the supporting of CPN and Detectron will coming soon.
+Once you have h36m data, 2d detected data and pre-trained model, you can run the script to evaluate our model on wild videos. Now we provide the interface between Openpose and our network, the supporting of CPN and Detectron will coming soon.
 
-After running Openpose, all 2d pose files will be stored in one folder, then you can use these folder path as input parameter to run the python script, the results will also be in a subfoler in *./output* with bvh format.
+After running Openpose, all 2d pose files will be stored in one folder, then you can use these folder path as input parameter to run the python script, the results will also be in a subfolder in *./output* with bvh format.
 
 Now we **haven't apply any smoothing process** on the 2d **input** and **output**, you can do it by yourself to get better results like we show in the video, but here we want to show the original production.
 
@@ -95,7 +95,7 @@ python evaluate.py -r ./checkpoints/wild_gt_tcc.pth -i [openpose_results_folder]
 
 We provide instructions for retraining our models
 
-There are three kinds paramters for training: Runtime parameters, Network definition and Training parameters, you can find more details in *train.py*. We also provide a default configration of network definition and trainer, you can find it in *./config_zoo/default.json*. Before your training, you should change the ***save_dir*** in this file to a suitable path.
+There are three kinds parameters for training: Runtime parameters, Network definition and Training parameters, you can find more details in *train.py*. We also provide a default configuration of network definition and trainer, you can find it in *./config_zoo/default.json*. Before your training, you should change the ***save_dir*** in this file to a suitable path.
 
 If you want to reproduce the results of our pretrained models, run the following commands:
 
@@ -109,23 +109,37 @@ python train.py -n h36m --kernel_size 5,3,1 --stride 1,1,1 --dilation 1,1,1 --ch
 # wild videos
 python train.py -n wild -d 1 --kernel_size 5,3,1 --stride 3,1,1 --dilation 1,1,1 --channel 1024 --confidence 1 --translation 1 --contact 1 --loss_term 1101
 ```
+### Training visualization:
+
+We use [tensorboardX](https://github.com/lanpa/tensorboardX) to visualize the losses when training. In the training, you can go into checkpoint folder and run this command:
+
+```
+tensorboard --logdir=./
+
+Print:
+TensorBoard 1.15.0 at http://localhost:6006/ (Press CTRL+C to quit)
+```
+
+Then you can visit this link in your machine [http://localhost:6006/](http://localhost:6006/) to check the visualzation.
+
+![vis_example](https://user-images.githubusercontent.com/7709951/100384574-6e8fb100-305b-11eb-9900-aa7b50be6ac0.png)
 
 ### Training tips:
 
 There are few things you can do to get different model preferences:
 
-- We haven't use any foot contact dataset to train it, we just extract it by average foot height and velocity in h36m datatset. And in this [contact detection function](https://github.com/Shimingyi/MotioNet/blob/master/data/h36m_dataset.py#L148), there is a magic number 20, and it can be defined by you self. If the number is bigger, more frames can be thought as ‘contacting'. It will enhence the attraction from floor, so the results will be worse if there are so many foot action.
+- We haven't use any foot contact dataset to train it, we just extract it by average foot height and velocity in h36m dataset. And in this [contact detection function](https://github.com/Shimingyi/MotioNet/blob/master/data/h36m_dataset.py#L148), there is a magic number 20, and it can be defined by you self. If the number is bigger, more frames can be thought as ‘contacting'. It will enhence the attraction from floor, so the results will be worse if there are so many foot action.
 - We trained our model on clips with variance frame number, so you can put all the frames of test video to the network without cutting.
 
 ## Limitations
 
-- Moving camera: The model is trained on h36m dataset which includes 4 cameres, and what the network predict is in camera space. The reason is that, if we predict the pose in world space: (different 3d pose ⊕ different camera view) = same 2d projection, then if given a same 2d pose, these will be an ambiguity for predicted 3d pose. When the camera is moving, the situation is same like it, sometimes looks make sense, but not correct.
-- The dependence on 2d detection: The input is 2d detection from other inplement, although the confidence map is used as a adapter, the results will be influenced when 2d detection crushed, it's mostly appeared in fast motion or occlusion cases.
+- Moving camera: The model is trained on h36m dataset which includes 4 cameras, and what the network predict is in camera space. The reason is that, if we predict the pose in world space: (different 3d pose ⊕ different camera view) = same 2d projection, then if given a same 2d pose, these will be an ambiguity for predicted 3d pose. When the camera is moving, the situation is same like it, sometimes looks make sense, but not correct.
+- The dependence on 2d detection: The input is 2d detection from other implement, although the confidence map is used as a adapter, the results will be influenced when 2d detection crushed, it's mostly appeared in fast motion or occlusion cases.
 - Animation: Explained in paper, the loss is not applied on rotation directly so the absolutely value of rotation is wired although look fine in positional view. This problem will be solved in next version.
 
 ## Acknowledgments
 
-The code of foraward kinematic layer is from [cvpr2018nkn](https://github.com/rubenvillegas/cvpr2018nkn) in tensorflow, we re-write a pytorch version in our code. 
+The code of forward kinematics layer is from [cvpr2018nkn](https://github.com/rubenvillegas/cvpr2018nkn) in tensorflow, we re-write a pytorch version in our code. 
 
 ## Citation
 
