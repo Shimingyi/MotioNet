@@ -212,22 +212,24 @@ class h36m_dataset(Dataset):
         pose_array = pose_array.copy()
         confidence_map_clone = np.ones(pose_array.shape)
         if training:
-            for item_index, joint_index in enumerate(lsp_h36m_mapping):
-                deleted_index = np.random.randint(0, 10000, size=pose_array.shape[0]) < missing_distribution[joint_index]/3
-                noise_radius = np.mean(range_distribution[joint_index, :, 1]) * length_mean
+            for h36m_index, lsp_index in enumerate(lsp_h36m_mapping):
+                deleted_index = np.random.randint(0, 10000, size=pose_array.shape[0]) < missing_distribution[lsp_index]/3
+                noise_radius = np.mean(range_distribution[lsp_index, :, 1]) * length_mean
                 noises_x = np.random.normal(-noise_radius / 6, noise_radius / 6, size=pose_array.shape[0])
                 noises_y = np.random.normal(-noise_radius / 6, noise_radius / 6, size=pose_array.shape[0])
                 confidences_x = 1 - np.abs(noises_x) / noise_radius
                 confidences_y = 1 - np.abs(noises_y) / noise_radius
                 confidences = (confidences_x + confidences_y) / 2
                 confidences[confidences<0] = 0
-                pose_array[:, item_index*2] += noises_x
-                pose_array[:, item_index*2+1] += noises_y
-                pose_array[deleted_index, joint_index*2] = 0
-                pose_array[deleted_index, joint_index*2+1] = 0
-                confidence_map_clone[:, item_index*2] = confidences
-                confidence_map_clone[:, item_index*2+1] = confidences
-
+                pose_array[:, h36m_index*2] += noises_x
+                pose_array[:, h36m_index*2+1] += noises_y
+                pose_array[deleted_index, h36m_index*2] = 0
+                pose_array[deleted_index, h36m_index*2+1] = 0
+                
+                confidence_map_clone[:, h36m_index*2] = confidences_x
+                confidence_map_clone[:, h36m_index*2+1] = confidences_y
+                confidence_map_clone[deleted_index, h36m_index*2] = 0
+                confidence_map_clone[deleted_index, h36m_index*2+1] = 0
             return pose_array, confidence_map_clone
         else:
             return pose_array, confidence_map_clone

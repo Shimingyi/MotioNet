@@ -357,7 +357,7 @@ class rotation_D(base_model):
 
     # Get input B*T*J*4
     def forward(self, x):
-        x = x.view((x.shape[0], -1, self.joint_numbers))
+        x = x.reshape((x.shape[0], -1, self.joint_numbers))
         x = torch.transpose(x, 1, 2)
 
         x = self.relu(self.conv2(self.relu(self.conv1(x))))
