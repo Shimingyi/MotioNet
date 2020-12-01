@@ -1,6 +1,7 @@
 import os
 import math
 import numpy as np
+np.seterr(divide='ignore', invalid='ignore')
 
 ROTATION_NUMBERS = {'q': 4, '6d': 6, 'euler': 3}
 

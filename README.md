@@ -15,7 +15,7 @@ This library provides the source code of [*MotioNet*](http://rubbly.cn/publicati
 - NVIDIA GPU + CUDA CuDNN
 - 2D Pose Detection Tool (for evaluation on wild videos, now support: [Openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose))
 
-Run this command to install the python packages:
+Based on your Cuda version, choose a suitable version of [PyTorch](https://pytorch.org/get-started/locally/) and install it, then run this command to install other packages:
 
 ```shell
 pip install -r requirements.txt
