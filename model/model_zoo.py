@@ -225,7 +225,7 @@ class fk_layer(base_model):
         row1 = torch.cat((c2 * c3, -s2, c2 * s3), 1).view(-1, 1, 3)  # batch*1*3
         row2 = torch.cat((c1 * s2 * c3 + s1 * s3, c1 * c2, c1 * s2 * s3 - s1 * c3), 1).view(-1, 1, 3)  # batch*1*3
         row3 = torch.cat((s1 * s2 * c3 - c1 * s3, s1 * c2, s1 * s2 * s3 + c1 * c3), 1).view(-1, 1, 3)  # batch*1*3
-        matrices = torch.cat((row1, row2, row3), 1).reshape((rotations.shape[0], rotations.shape[1], 3, 3))  # batch*3*3
+        matrices = torch.cat((row1, row2, row3), 1).cpu().numpy()
         q = Quaternions.from_transforms(matrices)
         return q.qs
 

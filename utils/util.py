@@ -5,7 +5,7 @@ from scipy.interpolate import splrep, splev, InterpolatedUnivariateSpline
 
 np.seterr(divide='ignore', invalid='ignore')
 
-ROTATION_NUMBERS = {'q': 4, '6d': 6, 'euler': 3}
+ROTATION_NUMBERS = {'q': 4, '6d': 6, 'eular': 3}
 
 def mkdir_dir(path):
     if not os.path.exists(path):

@@ -60,7 +60,7 @@ class fk_model(base_model):
         output_Q = self.branch_Q(_input)
         fake_rotations = output_Q[:, :, :12*self.rotation_number]
         fake_rotations_full = torch.zeros((fake_rotations.shape[0], fake_rotations.shape[1], 17*self.rotation_number), requires_grad=True).cuda()
-        fake_rotations_full[:, :, np.arange(17)*4] = 1 if self.rotation_type == 'q' else 0# Set all to identity quaternion
+        fake_rotations_full[:, :, np.arange(17)*self.rotation_number] = 1 if self.rotation_type == 'q' else 0# Set all to identity quaternion
         complate_indices = np.sort(np.hstack([np.array([0,1,2,4,5,7,8,9,11,12,14,15])*self.rotation_number + i for i in range(self.rotation_number)]))
         fake_rotations_full[:,:,complate_indices] = fake_rotations
         fake_pose_3d = self.fk_layer.forward(self.parents, skeleton.repeat(_input.shape[1], 1, 1), fake_rotations_full.contiguous().view(-1, 17, self.rotation_number)).view(_input.shape[0], _input.shape[1], -1)
