@@ -153,11 +153,6 @@ class fk_layer(base_model):
             z = z.view(-1, 3, 1)
             m = torch.cat((x, y, z), 2).reshape((rotations.shape[0], rotations.shape[1], 3, 3)) # batch*3*3
         elif self.rotation_type == 'eular':
-            rotations[:, 8, :] = 8
-            rotations[:, 15, :2] = 0
-            rotations[:, 16, 1:] = 0
-            rotations[:, 11, :2] = 0
-            rotations[:, 12, 1:] = 0
             rotations_reshape = rotations.view((-1, 3))
             batch = rotations_reshape.shape[0]
             c1 = torch.cos(rotations_reshape[:, 0]).view(batch, 1)  # batch*1
@@ -215,28 +210,24 @@ class fk_layer(base_model):
         y = y.view(-1, 3, 1)
         z = z.view(-1, 3, 1)
         matrices = torch.cat((x, y, z), 2).cpu().numpy()
-
         q = Quaternions.from_transforms(matrices)
-
         return q.qs
 
     def convert_eular_to_quaternions(self, rotations):
         rotations_reshape = rotations.view((-1, 3))
-        q = Quaternions.from_euler(rotations_reshape)
+        batch = rotations_reshape.shape[0]
+        c1 = torch.cos(rotations_reshape[:, 0]).view(batch, 1)  # batch*1
+        s1 = torch.sin(rotations_reshape[:, 0]).view(batch, 1)  # batch*1
+        c2 = torch.cos(rotations_reshape[:, 2]).view(batch, 1)  # batch*1
+        s2 = torch.sin(rotations_reshape[:, 2]).view(batch, 1)  # batch*1
+        c3 = torch.cos(rotations_reshape[:, 1]).view(batch, 1)  # batch*1
+        s3 = torch.sin(rotations_reshape[:, 1]).view(batch, 1)  # batch*1
+        row1 = torch.cat((c2 * c3, -s2, c2 * s3), 1).view(-1, 1, 3)  # batch*1*3
+        row2 = torch.cat((c1 * s2 * c3 + s1 * s3, c1 * c2, c1 * s2 * s3 - s1 * c3), 1).view(-1, 1, 3)  # batch*1*3
+        row3 = torch.cat((s1 * s2 * c3 - c1 * s3, s1 * c2, s1 * s2 * s3 + c1 * c3), 1).view(-1, 1, 3)  # batch*1*3
+        matrices = torch.cat((row1, row2, row3), 1).reshape((rotations.shape[0], rotations.shape[1], 3, 3))  # batch*3*3
+        q = Quaternions.from_transforms(matrices)
         return q.qs
-
-        # batch = matrices.shape[0]
-        #
-        # w = torch.sqrt(1.0 + matrices[:, 0, 0] + matrices[:, 1, 1] + matrices[:, 2, 2]) / 2.0
-        # w = torch.max(w, torch.autograd.Variable(torch.zeros(batch).cuda()) + 1e-8)  # batch
-        # w4 = 4.0 * w
-        # x = (matrices[:, 2, 1] - matrices[:, 1, 2]) / w4
-        # y = (matrices[:, 0, 2] - matrices[:, 2, 0]) / w4
-        # z = (matrices[:, 1, 0] - matrices[:, 0, 1]) / w4
-        #
-        # quats = torch.cat((w.view(batch, 1), x.view(batch, 1), y.view(batch, 1), z.view(batch, 1)), 1)
-        #
-        # return quats
 
 
 class conv_shrink_net(base_model):

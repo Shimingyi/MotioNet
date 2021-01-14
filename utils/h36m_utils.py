@@ -75,7 +75,7 @@ def load_camera_params(hf, path):
     p = hf[path.format('p')][:]
 
     name = hf[path.format('Name')][:]
-    name = "".join([chr(item) for item in name])
+    name = "".join([chr(int(item[0])) for item in name])
 
     return R, T, f, c, k, p, name
 

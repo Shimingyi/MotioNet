@@ -17,6 +17,7 @@ class fk_model(base_model):
         self.config = config
         assert len(config.arch.kernel_size) == len(config.arch.stride) == len(config.arch.dilation)
         self.parents = [-1, 0, 1, 2, 0, 4, 5, 0, 7, 8, 9, 8, 11, 12, 8, 14, 15]
+        self.rotation_type = config.arch.rotation_type
         self.rotation_number = util.ROTATION_NUMBERS.get(config.arch.rotation_type)
         self.input_feature = 3 if config.arch.confidence else 2
         self.input_joint = 17 if config.trainer.data == 'gt' else 17
@@ -59,12 +60,20 @@ class fk_model(base_model):
         output_Q = self.branch_Q(_input)
         fake_rotations = output_Q[:, :, :12*self.rotation_number]
         fake_rotations_full = torch.zeros((fake_rotations.shape[0], fake_rotations.shape[1], 17*self.rotation_number), requires_grad=True).cuda()
-        fake_rotations_full[:, :, np.arange(17)*4] = 1 # Set all to identity quaternion
+        fake_rotations_full[:, :, np.arange(17)*4] = 1 if self.rotation_type == 'q' else 0# Set all to identity quaternion
         complate_indices = np.sort(np.hstack([np.array([0,1,2,4,5,7,8,9,11,12,14,15])*self.rotation_number + i for i in range(self.rotation_number)]))
         fake_rotations_full[:,:,complate_indices] = fake_rotations
         fake_pose_3d = self.fk_layer.forward(self.parents, skeleton.repeat(_input.shape[1], 1, 1), fake_rotations_full.contiguous().view(-1, 17, self.rotation_number)).view(_input.shape[0], _input.shape[1], -1)
         fake_c = output_Q[:, :, -2:] if self.config.arch.contact else None
         fake_proj = (self.branch_Q(_input)[:, :, -3] if self.config.arch.contact else self.branch_Q(_input)[:, :, -1]) if self.config.arch.translation else None
+        
+        if self.rotation_type == '6d':
+            fake_rotations_full = self.fk_layer.convert_6d_to_quaternions(fake_rotations_full.detach()).reshape((-1, self.input_joint, 4))
+        elif self.rotation_type == 'eular':
+            fake_rotations_full = self.fk_layer.convert_eular_to_quaternions(fake_rotations_full.detach()).reshape((-1, self.input_joint, 4))
+        else:
+            fake_rotations_full = fake_rotations_full.detach().cpu().numpy()
+
         return fake_bones, fake_rotations, fake_rotations_full, fake_pose_3d, fake_c, fake_proj
 
     def lr_decaying(self, decay_rate):
@@ -104,48 +113,4 @@ def bones2skel(bones, bone_mean, bone_std):
     skel_in[:, 15, 0] = -unnorm_bones[:, 0, 8]
     skel_in[:, 16, 0] = -unnorm_bones[:, 0, 9]
     return skel_in
-
-def qeuler(q, order, epsilon=0):
-    """
-    Convert quaternion(s) q to Euler angles.
-    Expects a tensor of shape (*, 4), where * denotes any number of dimensions.
-    Returns a tensor of shape (*, 3).
-    """
-    assert q.shape[-1] == 4
-    
-    original_shape = list(q.shape)
-    original_shape[-1] = 3
-    q = q.view(-1, 4)
-    
-    q0 = q[:, 0]
-    q1 = q[:, 1]
-    q2 = q[:, 2]
-    q3 = q[:, 3]
-    
-    if order == 'xyz':
-        x = torch.atan2(2 * (q0 * q1 - q2 * q3), 1 - 2*(q1 * q1 + q2 * q2))
-        y = torch.asin(torch.clamp(2 * (q1 * q3 + q0 * q2), -1+epsilon, 1-epsilon))
-        z = torch.atan2(2 * (q0 * q3 - q1 * q2), 1 - 2*(q2 * q2 + q3 * q3))
-    elif order == 'yzx':
-        x = torch.atan2(2 * (q0 * q1 - q2 * q3), 1 - 2*(q1 * q1 + q3 * q3))
-        y = torch.atan2(2 * (q0 * q2 - q1 * q3), 1 - 2*(q2 * q2 + q3 * q3))
-        z = torch.asin(torch.clamp(2 * (q1 * q2 + q0 * q3), -1+epsilon, 1-epsilon))
-    elif order == 'zxy':
-        x = torch.asin(torch.clamp(2 * (q0 * q1 + q2 * q3), -1+epsilon, 1-epsilon))
-        y = torch.atan2(2 * (q0 * q2 - q1 * q3), 1 - 2*(q1 * q1 + q2 * q2))
-        z = torch.atan2(2 * (q0 * q3 - q1 * q2), 1 - 2*(q1 * q1 + q3 * q3))
-    elif order == 'xzy':
-        x = torch.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2*(q1 * q1 + q3 * q3))
-        y = torch.atan2(2 * (q0 * q2 + q1 * q3), 1 - 2*(q2 * q2 + q3 * q3))
-        z = torch.asin(torch.clamp(2 * (q0 * q3 - q1 * q2), -1+epsilon, 1-epsilon))
-    elif order == 'yxz':
-        x = torch.asin(torch.clamp(2 * (q0 * q1 - q2 * q3), -1+epsilon, 1-epsilon))
-        y = torch.atan2(2 * (q1 * q3 + q0 * q2), 1 - 2*(q1 * q1 + q2 * q2))
-        z = torch.atan2(2 * (q1 * q2 + q0 * q3), 1 - 2*(q1 * q1 + q3 * q3))
-    elif order == 'zyx':
-        x = torch.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2*(q1 * q1 + q2 * q2))
-        y = torch.asin(torch.clamp(2 * (q0 * q2 - q1 * q3), -1+epsilon, 1-epsilon))
-        z = torch.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2*(q2 * q2 + q3 * q3))
-
-    return torch.stack((x, y, z), dim=1).view(original_shape)
 

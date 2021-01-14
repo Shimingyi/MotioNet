@@ -17,7 +17,7 @@ class fk_trainer(base_trainer):
         self.log_step = int(np.sqrt(data_loader.batch_size))
         self.train_parameters = [self._prepare_data(item) for item in self.data_loader.dataset.get_parameters()]
         self.test_parameters = [self._prepare_data(item) for item in self.test_data_loader.dataset.get_parameters()]
-        self.lambda_s, self.lambda_q, self.lambda_pee, self.lambda_root, self.lambda_f, self.lambda_fc = 0.1, 1, 1.2, 1.3, 0.5, 0.5
+        self.lambda_s, self.lambda_q, self.lambda_pee, self.lambda_root, self.lambda_f, self.lambda_fc = 0.1, 1, 1.2, 0.3, 0.5, 0.5
         self.stpes = 0
 
     def _train_epoch(self, epoch):

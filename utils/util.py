@@ -1,6 +1,8 @@
 import os
 import math
 import numpy as np
+from scipy.interpolate import splrep, splev, InterpolatedUnivariateSpline
+
 np.seterr(divide='ignore', invalid='ignore')
 
 ROTATION_NUMBERS = {'q': 4, '6d': 6, 'euler': 3}
@@ -57,3 +59,21 @@ def umnormalize_data(normalized_data, data_mean, data_std):
     meanMat = np.repeat(meanMat, T, axis=0)
     orig_data = np.multiply(normalized_data, stdMat) + meanMat
     return orig_data
+
+
+def interp_pose(pose_array, confidences, k=2):
+    frame_number, joint_number = confidences.shape[0], confidences.shape[1]
+    pose_completed = np.zeros_like(pose_array)
+    confi_completed = np.zeros_like(confidences)
+    for joint_index in range(joint_number):
+        x_loc = pose_array[:, joint_index*2]
+        y_loc = pose_array[:, joint_index*2 + 1]
+        joint_confi = confidences[:, joint_index]
+        select_indics = (joint_confi >= 0.4)
+        x_spl = InterpolatedUnivariateSpline(np.arange(0, frame_number)[select_indics], x_loc[select_indics], k=2)
+        y_spl = InterpolatedUnivariateSpline(np.arange(0, frame_number)[select_indics], y_loc[select_indics], k=2)
+        c_spl = InterpolatedUnivariateSpline(np.arange(0, frame_number)[select_indics], joint_confi[select_indics], k=2)
+        pose_completed[:, joint_index*2] = x_spl(np.arange(0, frame_number))
+        pose_completed[:, joint_index*2 + 1] = y_spl(np.arange(0, frame_number))
+        confi_completed[:, joint_index] = c_spl(np.arange(0, frame_number))
+    return pose_completed, confi_completed
