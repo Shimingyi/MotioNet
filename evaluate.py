@@ -75,6 +75,7 @@ def main(config, args, output_folder):
             video_name = pose_folder.split('/')[-1]
             files = util.make_dataset([pose_folder], phase='json', data_split=1, sort=True, sort_index=1)
             IMAGE_WIDTH = 1080 # Should be changed refer to your test data
+            IMAGE_HEIGHT = 1080
             pose_batch = []
             confidence_batch = []
             for pose_file_name in files:
@@ -82,7 +83,9 @@ def main(config, args, output_folder):
                     h36m_locations, h36m_confidence = h36m_utils.convert_openpose(json.load(f))
                     pose_batch.append(h36m_locations)
                     confidence_batch.append(h36m_confidence)
-            poses_2d = np.concatenate(pose_batch, axis=0)/IMAGE_WIDTH
+            poses_2d = np.concatenate(pose_batch, axis=0)
+            poses_2d[:, np.arange(0, poses_2d.shape[-1], 2)] /= (IMAGE_WIDTH*1) # The last number 1 is an adjustable varible, if the person takes full space of image, try to use a bigger number like 2
+            poses_2d[:, np.arange(1, poses_2d.shape[-1], 2)] /= (IMAGE_HEIGHT*1) # The last number 1 is an adjustable varible, if the person takes full space of image, try to use a bigger number like 2
             confidences = np.concatenate(confidence_batch, axis=0)
             poses_2d_root = (poses_2d - np.tile(poses_2d[:, :2], [1, int(poses_2d.shape[-1] / 2)]))
             if args.smooth:
